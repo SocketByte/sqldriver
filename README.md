@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'pl.socketbyte', name: 'sqldriver', version: '1.0.3'
+    compile group: 'pl.socketbyte', name: 'sqldriver', version: '1.0.4'
 }
 ```
 
