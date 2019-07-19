@@ -135,8 +135,7 @@ public class SqlConnection implements AutoCloseable {
                         try {
                             field.set(object, matchingObjects);
                         } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                            throw new RuntimeException("Could not set the matching objects to the SqlReference field");
+                            throw new RuntimeException("Could not set the matching objects to the SqlReference field", e);
                         }
                     }
                     else {
@@ -145,8 +144,7 @@ public class SqlConnection implements AutoCloseable {
                                 continue;
                             field.set(object, matchingObjects.get(0));
                         } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                            throw new RuntimeException("Could not set the matching object to the SqlReference field");
+                            throw new RuntimeException("Could not set the matching object to the SqlReference field", e);
                         }
                     }
                 }
@@ -207,9 +205,8 @@ public class SqlConnection implements AutoCloseable {
         try {
             this.connection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
-            System.err.println("Connection was not closed successfully, " +
-                    "this will lead to connection leaks!");
+            throw new RuntimeException("The connection was not closed properly, " +
+                    "this may lead to connection leaks!", e);
         }
     }
 
