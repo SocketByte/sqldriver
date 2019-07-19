@@ -81,7 +81,6 @@ public class SqlConnection implements AutoCloseable {
                     Class<?> fieldType = reference.reference();
                     String fieldName = field.getName();
 
-                    List referencedObjects = new ArrayList();
                     SelectionResult referencedResult = results.get(fieldType);
 
                     if (referencedResult == null)
