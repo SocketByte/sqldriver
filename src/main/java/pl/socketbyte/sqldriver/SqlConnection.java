@@ -152,6 +152,10 @@ public class SqlConnection implements AutoCloseable {
         return results;
     }
 
+    public <T> void update(T instance, ORMStatement.Where... whereConditions) {
+
+    }
+
     public <T> void insert(T instance) {
         ORMStatement<T> statement = (ORMStatement<T>) makeORMStatement(instance.getClass());
 

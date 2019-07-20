@@ -37,8 +37,7 @@ public class SqlSource {
         try {
             return this.source.getConnection();
         } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException("Unable to borrow the connection", e);
         }
     }
 

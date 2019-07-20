@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'pl.socketbyte', name: 'sqldriver', version: '1.0.4'
+    compile group: 'pl.socketbyte', name: 'sqldriver', version: '1.0.5'
 }
 ```
 
@@ -40,9 +40,16 @@ public class HelloWorldSqlDriver {
     
     @SqlObject(tableName="users")
     class User {
+        // This annotation automatically generates
+        // WHERE conditions from fields annotated with it
+        // Used for delete(), update() operations
+        // Mostly these things never change and are
+        // treated like static ids/primary keys
+        @SqlPrimary
+        public UUID uniqueId;
+        
         // You do not need @SqlField (its optional)
         // SqlDriver automatically detects the type and name
-        public UUID uniqueId;
         public String clanTag;
         
         // Makes the field nullable (doesnt get NOT NULL flag in SQL)

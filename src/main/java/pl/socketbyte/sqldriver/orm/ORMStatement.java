@@ -2,10 +2,7 @@ package pl.socketbyte.sqldriver.orm;
 
 import pl.socketbyte.sqldriver.SqlConnection;
 import pl.socketbyte.sqldriver.SqlDriver;
-import pl.socketbyte.sqldriver.orm.annotation.SqlField;
-import pl.socketbyte.sqldriver.orm.annotation.SqlNullable;
-import pl.socketbyte.sqldriver.orm.annotation.SqlObject;
-import pl.socketbyte.sqldriver.orm.annotation.SqlTransient;
+import pl.socketbyte.sqldriver.orm.annotation.*;
 import pl.socketbyte.sqldriver.query.SqlQuery;
 import pl.socketbyte.sqldriver.query.SqlDataType;
 import pl.socketbyte.sqldriver.reflect.FieldOperations;
@@ -61,7 +58,7 @@ public class ORMStatement<T> {
         try (PreparedStatement statement = this.connection.createStatement(query)) {
             statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Unable to create a table", e);
         }
     }
 
@@ -75,7 +72,7 @@ public class ORMStatement<T> {
             setStatementArguments(statement, instance);
             statement.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Unable to insert an object", e);
         }
     }
 
@@ -125,16 +122,100 @@ public class ORMStatement<T> {
                     selected.add(object);
                 }
             } catch (IllegalAccessException | InstantiationException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Unable to read the ResultSet", e);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Unable to select the objects", e);
         }
 
         return selected;
     }
 
-    private void setStatementArguments(PreparedStatement statement, T instance) {
+    public void drop() {
+        String query = new SqlQuery()
+                .drop().table(this.tableName).done();
+
+        try (PreparedStatement statement = this.connection.createStatement(query)) {
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to drop the table", e);
+        }
+    }
+
+    public void delete(T instance, Where... whereConditions) {
+        SqlQuery queryBuilder = new SqlQuery()
+                .deleteFrom()
+                .table(this.tableName);
+
+        executeWhereBasedStatement(instance, queryBuilder, whereConditions);
+    }
+
+    public void update(T instance, Where... whereConditions) {
+        Collection<ORMFieldData> fieldDatas = getFieldData().values();
+        String[] fieldNames = new String[fieldDatas.size()];
+        int x = 0;
+        for (ORMFieldData data : fieldDatas) {
+            fieldNames[x] = data.getName();
+            x++;
+        }
+        SqlQuery queryBuilder = new SqlQuery()
+                .update()
+                .table(this.tableName)
+                .set(fieldNames);
+
+        executeWhereBasedStatement(instance, queryBuilder, whereConditions);
+    }
+
+    private void executeWhereBasedStatement(T instance, SqlQuery queryBuilder, Where... whereConditions) {
+        Tuple<String, List<Where>> tuple = prepareWhereCondition(instance, queryBuilder, whereConditions);
+        String query = tuple.getKey();
+        List<Where> wheres = tuple.getValue();
+
+        try (PreparedStatement statement = this.connection.createStatement(query)) {
+            int index = setStatementArguments(statement, instance);
+            for (Where where : wheres) {
+                statement.setObject(index, where.value);
+
+                index++;
+            }
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Unable to execute statement", e);
+        }
+    }
+
+    private Tuple<String, List<Where>> prepareWhereCondition(T instance, SqlQuery queryBuilder, Where... original) {
+        String query = null;
+        List<Where> wheres = new ArrayList<>();
+        if (original.length > 0) {
+            String[] recordNames = new String[original.length];
+            for (int i = 0; i < original.length; i++) {
+                recordNames[i] = original[i].recordName;
+                wheres.add(original[i]);
+            }
+
+            query = queryBuilder.where(recordNames).done();
+        }
+        else {
+            Field[] fields = this.operations.getFields(instance.getClass());
+            List<String> recordNames = new ArrayList<>();
+            for (Field field : fields) {
+                if (!field.isAnnotationPresent(SqlPrimary.class))
+                    continue;
+
+                ORMFieldData data = getFieldData().get(field.getName());
+                Object value = this.operations.getField(instance.getClass(), instance, field.getName());
+
+                recordNames.add(data.getName());
+                wheres.add(new Where(data.getName(), value));
+
+            }
+            query = queryBuilder.where(Arrays.toString(recordNames.toArray())).done();
+        }
+        return new Tuple<>(query, wheres);
+    }
+
+    private int setStatementArguments(PreparedStatement statement, T instance) {
         int index = 1;
         for (Map.Entry<String, ORMFieldData> entry : fieldData.entrySet()) {
             String field = entry.getKey();
@@ -151,10 +232,11 @@ public class ORMStatement<T> {
 
                 statement.setObject(index, object);
             } catch (SQLException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Unable to set object data", e);
             }
             index++;
         }
+        return index;
     }
 
     @SuppressWarnings("deprecation")
@@ -197,6 +279,32 @@ public class ORMStatement<T> {
                 fieldType = ORMTypeReader.readFieldType(field);
 
             this.fieldData.put(field.getName(), new ORMFieldData(fieldName, fieldType, nullable));
+        }
+    }
+
+    private class Tuple<K, V> {
+        private K key;
+        private V value;
+
+        public Tuple(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public K getKey() {
+            return key;
+        }
+
+        public void setKey(K key) {
+            this.key = key;
+        }
+
+        public V getValue() {
+            return value;
+        }
+
+        public void setValue(V value) {
+            this.value = value;
         }
     }
 

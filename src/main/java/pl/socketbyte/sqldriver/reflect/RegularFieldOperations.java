@@ -13,9 +13,8 @@ public class RegularFieldOperations implements FieldOperations {
 
             return field.get(instance);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Unable to read the field value", e);
         }
-        return null;
     }
 
     @Override
@@ -27,7 +26,7 @@ public class RegularFieldOperations implements FieldOperations {
 
             field.set(instance, value);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Unable to set the field value", e);
         }
     }
 
