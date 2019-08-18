@@ -102,6 +102,8 @@ public class SqlConnection implements AutoCloseable {
                             compareByValues = true;
                         }
                         for (Object referencedObject : referencedResult.getObjects()) {
+                            //
+
                             Object valueCompareTo = null;
                             try {
                                 valueCompareTo = referencedObject.getClass().getField(compareTo).get(referencedObject);

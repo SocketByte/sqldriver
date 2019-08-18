@@ -36,6 +36,15 @@ public class ORMStatement<T> {
         return null;
     }
 
+    private ORMFieldData getORMDataFromRecord(String recordName) {
+        for (Map.Entry<String, ORMFieldData> entry : fieldData.entrySet()) {
+            if (entry.getValue().name.equals(recordName)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     public ORMStatement(SqlDriver driver, SqlConnection connection, Class<? extends T> clazz) {
         this.connection = connection;
         this.clazz = clazz;
@@ -108,12 +117,22 @@ public class ORMStatement<T> {
                     for (int i = 1; i <= count; i++) {
                         Object value = rs.getObject(i);
                         String name = getOriginalFieldName(rs.getMetaData().getColumnName(i));
+                        ORMFieldData fieldData = getORMDataFromRecord(rs.getMetaData().getColumnName(i));
 
                         Object resultValue = value;
                         try {
                             if (value != null)
                                 resultValue = UUID.fromString(value.toString());
-                        } catch (Exception e) {
+                        } catch (Exception ignored) {
+                        }
+
+                        try {
+                            if (value != null) {
+                                String potentialBase64 = value.toString();
+
+                                resultValue = ORMSerializer.deserialize(potentialBase64, fieldData.isUsingBukkitSerialization());
+                            }
+                        } catch (Exception ignored) {
                         }
 
                         this.operations.setField(this.clazz, object, name, resultValue);
