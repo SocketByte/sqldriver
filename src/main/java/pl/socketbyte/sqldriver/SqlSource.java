@@ -25,7 +25,6 @@ public class SqlSource {
     public SqlSource(String propertiesPath) {
         HikariConfig config = new HikariConfig(propertiesPath);
         config.setPoolName("SqlDriverPool");
-        config.addDataSourceProperty("rewriteBatchedStatements", true);
 
         this.source = new HikariDataSource(config);
     }
