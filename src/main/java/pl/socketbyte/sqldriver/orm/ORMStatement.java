@@ -224,7 +224,7 @@ public class ORMStatement<T> {
                 Object object = this.operations.getField(this.clazz, instance, field);
 
                 if (data.getDataType() == SqlDataType.BASE64) {
-                    object = ORMSerializer.serialize(object);
+                    object = ORMSerializer.serialize(object, data.isUsingBukkitSerialization());
                 }
                 else if (data.getDataType() == SqlDataType.UNIQUE_ID) {
                     object = object.toString();
@@ -255,6 +255,11 @@ public class ORMStatement<T> {
             String fieldName = null;
             SqlDataType fieldType = null;
             boolean nullable = false;
+            boolean useBukkitSerialization = false;
+
+            if (field.isAnnotationPresent(SqlUseBukkitSerialization.class)) {
+                useBukkitSerialization = true;
+            }
 
             if (field.isAnnotationPresent(SqlField.class)) {
                 SqlField property = field.getAnnotation(SqlField.class);
@@ -278,7 +283,7 @@ public class ORMStatement<T> {
             if (fieldType == null)
                 fieldType = ORMTypeReader.readFieldType(field);
 
-            this.fieldData.put(field.getName(), new ORMFieldData(fieldName, fieldType, nullable));
+            this.fieldData.put(field.getName(), new ORMFieldData(fieldName, fieldType, nullable, useBukkitSerialization));
         }
     }
 
@@ -330,11 +335,13 @@ public class ORMStatement<T> {
         private final String name;
         private final SqlDataType dataType;
         private final boolean nullable;
+        private final boolean useBukkitSerialization;
 
-        public ORMFieldData(String name, SqlDataType dataType, boolean nullable) {
+        public ORMFieldData(String name, SqlDataType dataType, boolean nullable, boolean useBukkitSerialization) {
             this.name = name;
             this.dataType = dataType;
             this.nullable = nullable;
+            this.useBukkitSerialization = useBukkitSerialization;
         }
 
         public String getName() {
@@ -347,6 +354,10 @@ public class ORMStatement<T> {
 
         public boolean isNullable() {
             return nullable;
+        }
+
+        public boolean isUsingBukkitSerialization() {
+            return useBukkitSerialization;
         }
     }
 

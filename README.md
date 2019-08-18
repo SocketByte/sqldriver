@@ -3,7 +3,8 @@ Small all-in-one ORM solution with built-in HikariCP as a connection pool.
 It has a simple referencing system and it's based mainly on annotations.
 It has built-in FST serialization for saving unsaveable field data to Base64 (as string)
 
-Keep in mind that it is not finished.
+**Also, SqlDriver integrates into Bukkit by providing additional Bukkit serializing for Bukkit objects 
+like Location, ItemStack or Inventory.**
 
 ## Installation
 Please use Gradle or Maven.
@@ -15,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    compile group: 'pl.socketbyte', name: 'sqldriver', version: '1.0.7'
+    compile group: 'pl.socketbyte', name: 'sqldriver', version: '1.0.8'
 }
 ```
 
@@ -28,6 +29,12 @@ public class HelloWorldSqlDriver {
     class Clan {
         public String tag;
         public String name;
+        
+        // ItemStacks, Inventories, Locations etc from Bukkit
+        // require different way of serializing, so you 
+        // need to add this annotation if you want to use it
+        @SqlUseBukkitSerialization
+        public org.bukkit.Location location;
         
         // Makes the field unreadable for SqlDriver ORM
         @SqlTransient
